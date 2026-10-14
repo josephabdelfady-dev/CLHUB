@@ -1,0 +1,8 @@
+# Payroll / attendance data — never commit employee data to the repo
+*.xlsx
+*.xls
+*.csv
+
+# Python
+__pycache__/
+*.pyc
