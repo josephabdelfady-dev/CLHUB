@@ -581,14 +581,95 @@ def email_reports(args, df, calc, summary, today_str, attachments):
 
 
 # ---------------------------------------------------------------------------
+# INPUT RESOLUTION  (so the script "just works" when you press Run)
+# ---------------------------------------------------------------------------
+
+def _script_dir():
+    try:
+        return os.path.dirname(os.path.abspath(__file__))
+    except NameError:
+        return os.getcwd()
+
+
+def _is_candidate(name):
+    """True for an input-looking .xlsx (not a temp lock or our own output)."""
+    low = name.lower()
+    if not low.endswith((".xlsx", ".xlsm")):
+        return False
+    if name.startswith("~$"):                       # Excel lock file
+        return False
+    if low.endswith("_with_deductions.xlsx"):        # our own output
+        return False
+    if "deduction" in low and "output" in low:
+        return False
+    return True
+
+
+def resolve_input(given):
+    """Return a real path to the input workbook.
+
+    Order: an explicit path (as given, or next to the script) -> the default
+    'attendance.xlsx' -> auto-detect a single .xlsx in the script's folder ->
+    if several, ask (falling back to the newest) -> otherwise a clear error.
+    """
+    here = _script_dir()
+
+    # 1) explicit path the user passed.
+    if given:
+        for cand in (given, os.path.join(here, given)):
+            if os.path.isfile(cand):
+                return cand
+        raise SystemExit(
+            f"Input file not found: {given!r}\n"
+            f"Looked in the current folder and in {here!r}.")
+
+    # 2) the conventional default name, if present.
+    default = os.path.join(here, "attendance.xlsx")
+    if os.path.isfile(default):
+        return default
+
+    # 3) auto-detect Excel files sitting next to the script.
+    found = sorted(
+        (os.path.join(here, f) for f in os.listdir(here) if _is_candidate(f)),
+        key=os.path.getmtime, reverse=True)
+
+    if not found:
+        raise SystemExit(
+            "No input Excel file found.\n"
+            f"Put your attendance .xlsx in this folder:\n    {here}\n"
+            "or run with a path, e.g.:\n"
+            '    python attendance_deductions.py -i "My Payroll.xlsx"')
+
+    if len(found) == 1:
+        print(f"  (auto-detected input: {os.path.basename(found[0])})")
+        return found[0]
+
+    # Several candidates -> let the user choose; default to the newest.
+    print("Multiple Excel files found in this folder:")
+    for n, path in enumerate(found, 1):
+        print(f"  [{n}] {os.path.basename(path)}")
+    try:
+        choice = input(f"Pick one [1-{len(found)}] (Enter = 1): ").strip()
+        idx = (int(choice) - 1) if choice else 0
+        if not (0 <= idx < len(found)):
+            idx = 0
+    except (EOFError, ValueError):
+        idx = 0
+    print(f"  using: {os.path.basename(found[idx])}")
+    return found[idx]
+
+
+# ---------------------------------------------------------------------------
 # MAIN
 # ---------------------------------------------------------------------------
 
 def main():
     ap = argparse.ArgumentParser(
         description="Calculate attendance deductions from an Excel sheet.")
-    ap.add_argument("-i", "--input", default="attendance.xlsx")
-    ap.add_argument("-o", "--output", default="attendance_deductions_output.xlsx")
+    ap.add_argument("-i", "--input", default=None,
+                    help="input Excel file (default: auto-detect in this folder)")
+    ap.add_argument("-o", "--output", default=None,
+                    help="output Excel file (default: <input>_with_deductions.xlsx)")
     ap.add_argument("--sheet", default=SHEET_NAME)
     ap.add_argument("--report", default=None,
                     help="path for the HTML report (default: <output>.html)")
@@ -608,8 +689,23 @@ def main():
         os.environ["SMTP_FROM"] = args.email_from
     today_str = dt.date.today().strftime("%Y-%m-%d")
 
-    print(f"Reading {args.input!r} (sheet {args.sheet!r}) ...")
-    df = pd.read_excel(args.input, sheet_name=args.sheet)
+    # Resolve the input (auto-detect when not given) and derive output paths.
+    input_path = resolve_input(args.input)
+    stem = os.path.splitext(input_path)[0]
+    output_path = args.output or (stem + "_with_deductions.xlsx")
+    report_path = args.report or (stem + "_deduction_report.html")
+    args.output = output_path          # used by email_reports() as attachment
+
+    print(f"Reading {os.path.basename(input_path)!r} (sheet {args.sheet!r}) ...")
+    try:
+        df = pd.read_excel(input_path, sheet_name=args.sheet)
+    except ValueError:
+        # Sheet name not found -> show what's available.
+        names = pd.ExcelFile(input_path).sheet_names
+        raise SystemExit(
+            f"Worksheet {args.sheet!r} not found. Available sheets:\n"
+            + "\n".join(f"  - {n}" for n in names)
+            + f"\nRun with  --sheet \"<name>\"  to pick one.")
     print(f"  {len(df)} rows, {df[COL_CODE].nunique(dropna=True)} employees")
 
     calc = compute(df)
@@ -619,17 +715,16 @@ def main():
     print(f"  total deduction: {total:.2f} working days "
           f"| net overtime after deduction: {net_ot:+.2f} days")
 
-    write_output(args.input, args.output, args.sheet, calc, summary)
-    print(f"  workbook written to {args.output!r}")
+    write_output(input_path, output_path, args.sheet, calc, summary)
+    print(f"  workbook written to {output_path!r}")
 
-    report_path = args.report or (os.path.splitext(args.output)[0] + ".html")
     html = build_report_html(df, calc, summary, today_str)
     with open(report_path, "w", encoding="utf-8") as fh:
         fh.write(html)
     print(f"  HTML report written to {report_path!r}")
 
     if args.send_email:
-        email_reports(args, df, calc, summary, today_str, [args.output])
+        email_reports(args, df, calc, summary, today_str, [output_path])
 
     print("Done.")
 
