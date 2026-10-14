@@ -61,6 +61,7 @@ import datetime as dt
 import mimetypes
 import os
 import smtplib
+import sys
 import ssl
 from email.message import EmailMessage
 from html import escape
@@ -598,10 +599,12 @@ def _is_candidate(name):
         return False
     if name.startswith("~$"):                       # Excel lock file
         return False
-    if low.endswith("_with_deductions.xlsx"):        # our own output
-        return False
-    if "deduction" in low and "output" in low:
-        return False
+    # Exclude anything that looks like a file this script generated, even if
+    # renamed with a suffix (e.g. "..._with_deductions1.xlsx").
+    for marker in ("with_deduction", "deduction_report",
+                   "deductions_output", "_deductions"):
+        if marker in low:
+            return False
     return True
 
 
@@ -644,17 +647,34 @@ def resolve_input(given):
         print(f"  (auto-detected input: {os.path.basename(found[0])})")
         return found[0]
 
-    # Several candidates -> let the user choose; default to the newest.
+    # Several candidates. Prompt only when a real interactive terminal is
+    # attached; otherwise (e.g. the VS Code debugger, a double-click, cron)
+    # auto-pick the newest so the script never hangs waiting for input.
     print("Multiple Excel files found in this folder:")
     for n, path in enumerate(found, 1):
-        print(f"  [{n}] {os.path.basename(path)}")
+        print(f"  [{n}] {os.path.basename(path)}  "
+              f"({'newest' if n == 1 else 'older'})")
+
+    interactive = False
     try:
-        choice = input(f"Pick one [1-{len(found)}] (Enter = 1): ").strip()
-        idx = (int(choice) - 1) if choice else 0
-        if not (0 <= idx < len(found)):
+        interactive = sys.stdin is not None and sys.stdin.isatty()
+    except Exception:
+        interactive = False
+
+    idx = 0
+    if interactive:
+        try:
+            choice = input(f"Pick one [1-{len(found)}] "
+                           "(Enter = newest): ").strip()
+            if choice:
+                n = int(choice) - 1
+                if 0 <= n < len(found):
+                    idx = n
+        except (EOFError, ValueError, KeyboardInterrupt):
             idx = 0
-    except (EOFError, ValueError):
-        idx = 0
+    else:
+        print("  (no interactive terminal — using the newest; "
+              'run with  -i "name.xlsx"  to choose a specific file)')
     print(f"  using: {os.path.basename(found[idx])}")
     return found[idx]
 
