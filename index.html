@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CLHUB — Home</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --surface: #ffffff;
+      --text: #1a1f36;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.05);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1115;
+        --surface: #1a1d24;
+        --text: #e8eaf0;
+        --muted: #9aa0ac;
+        --border: #2a2e37;
+        --primary: #818cf8;
+        --primary-hover: #a5b4fc;
+        --shadow: 0 1px 3px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.25rem; }
+    .logo {
+      width: 36px; height: 36px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--primary), #9333ea);
+      display: grid; place-items: center;
+      color: #fff; font-weight: 800; font-size: .95rem;
+    }
+    nav { display: flex; gap: 20px; }
+    nav a { color: var(--muted); text-decoration: none; font-size: .92rem; font-weight: 500; }
+    nav a:hover { color: var(--text); }
+
+    /* Hero */
+    .hero {
+      max-width: 1100px; margin: 0 auto;
+      padding: 56px 24px 24px; text-align: center;
+    }
+    .hero h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin-bottom: 12px; }
+    .hero p { color: var(--muted); font-size: 1.05rem; max-width: 560px; margin: 0 auto; }
+
+    /* Cards grid */
+    main { max-width: 1100px; margin: 0 auto; padding: 24px 24px 64px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+      transition: transform .15s ease, box-shadow .15s ease;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,.12), 0 16px 40px rgba(0,0,0,.08); }
+    .card .icon {
+      width: 46px; height: 46px; border-radius: 11px;
+      display: grid; place-items: center; font-size: 1.4rem;
+      background: color-mix(in srgb, var(--primary) 14%, transparent);
+    }
+    .card h3 { font-size: 1.1rem; }
+    .card p { color: var(--muted); font-size: .9rem; flex: 1; }
+    .card a.btn {
+      align-self: flex-start;
+      margin-top: 6px;
+      background: var(--primary);
+      color: #fff;
+      text-decoration: none;
+      font-size: .88rem; font-weight: 600;
+      padding: 8px 16px; border-radius: 8px;
+      transition: background .15s ease;
+    }
+    .card a.btn:hover { background: var(--primary-hover); }
+
+    footer {
+      text-align: center; color: var(--muted);
+      font-size: .85rem; padding: 32px 24px;
+      border-top: 1px solid var(--border);
+    }
+    @media (max-width: 560px) {
+      nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">CL</span>
+      <span>CLHUB</span>
+    </div>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>Welcome to CLHUB</h1>
+    <p>Your central hub for everything in one place. Explore the cards below to get started.</p>
+  </section>
+
+  <main id="features">
+    <div class="grid">
+      <article class="card">
+        <div class="icon">📊</div>
+        <h3>Dashboard</h3>
+        <p>Get a quick overview of your activity, stats, and recent updates at a glance.</p>
+        <a class="btn" href="#">Open</a>
+      </article>
+
+      <article class="card">
+        <div class="icon">👥</div>
+        <h3>Members</h3>
+        <p>Browse, add, and manage members and their roles across the platform.</p>
+        <a class="btn" href="#">View</a>
+      </article>
+
+      <article class="card">
+        <div class="icon">📅</div>
+        <h3>Events</h3>
+        <p>Create and track upcoming events, schedules, and important dates.</p>
+        <a class="btn" href="#">Explore</a>
+      </article>
+
+      <article class="card">
+        <div class="icon">📁</div>
+        <h3>Resources</h3>
+        <p>Access shared files, documents, and resources all in one organized library.</p>
+        <a class="btn" href="#">Browse</a>
+      </article>
+
+      <article class="card">
+        <div class="icon">💬</div>
+        <h3>Messages</h3>
+        <p>Stay connected with announcements, discussions, and direct messages.</p>
+        <a class="btn" href="#">Open</a>
+      </article>
+
+      <article class="card">
+        <div class="icon">⚙️</div>
+        <h3>Settings</h3>
+        <p>Customize your profile, notifications, and preferences to fit your needs.</p>
+        <a class="btn" href="#">Configure</a>
+      </article>
+    </div>
+  </main>
+
+  <footer id="contact">
+    <p>&copy; 2026 CLHUB. All rights reserved.</p>
+  </footer>
+</body>
+</html>
